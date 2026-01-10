@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import type { UnsplashImage } from '../../api/unsplash';
 import { useReactions, useComments } from '../../hooks/useInteractions';
-import { X, Send, Heart, Flame, Sparkles, Wand2, MessageCircle, Trash2, Smile } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { X, Send, Heart, Flame, Sparkles, Wand2, MessageCircle, Trash2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useUserStore } from '../../store/useUserStore';
 
 interface ImageModalProps {
@@ -15,7 +15,6 @@ const ImageModal: React.FC<ImageModalProps> = ({ image, onClose }) => {
     const { getCounts, addReaction, getUserReactions } = useReactions(image.id);
     const { comments, addComment, deleteComment } = useComments(image.id);
     const [newComment, setNewComment] = useState('');
-    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
     const counts = getCounts();
     const userReactions = getUserReactions();
@@ -99,8 +98,8 @@ const ImageModal: React.FC<ImageModalProps> = ({ image, onClose }) => {
                                         key={r.emoji}
                                         onClick={() => addReaction(r.emoji)}
                                         className={`group flex flex-col items-center gap-2 p-3 rounded-2xl transition-all border ${isActive
-                                                ? 'bg-white/10 border-white/20 scale-105'
-                                                : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.08]'
+                                            ? 'bg-white/10 border-white/20 scale-105'
+                                            : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.08]'
                                             }`}
                                     >
                                         <div className={`p-2 rounded-xl group-hover:scale-110 transition-transform ${r.bg} ${r.color}`}>
