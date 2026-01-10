@@ -5,7 +5,9 @@ interface UserState {
     userId: string;
     username: string;
     userColor: string;
+    selectedImageId: string | null;
     setIdentity: (id: string, name: string, color: string) => void;
+    setSelectedImageId: (id: string | null) => void;
 }
 
 const colors = [
@@ -33,7 +35,9 @@ export const useUserStore = create<UserState>()(
             userId: generateId(),
             username: generateRandomName(),
             userColor: generateRandomColor(),
+            selectedImageId: null,
             setIdentity: (userId, username, userColor) => set({ userId, username, userColor }),
+            setSelectedImageId: (id) => set({ selectedImageId: id }),
         }),
         {
             name: 'user-storage',

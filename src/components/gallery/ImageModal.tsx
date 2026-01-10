@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import type { UnsplashImage } from '../../api/unsplash';
 import { useReactions, useComments } from '../../hooks/useInteractions';
-import { X, Send, Heart, Flame, Sparkles, Wand2, MessageCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { X, Send, Heart, Flame, Sparkles, Wand2, MessageCircle, Trash2, Smile } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useUserStore } from '../../store/useUserStore';
 
 interface ImageModalProps {
     image: UnsplashImage;
@@ -10,10 +11,14 @@ interface ImageModalProps {
 }
 
 const ImageModal: React.FC<ImageModalProps> = ({ image, onClose }) => {
-    const { getCounts, addReaction } = useReactions(image.id);
-    const { comments, addComment } = useComments(image.id);
+    const { userId } = useUserStore();
+    const { getCounts, addReaction, getUserReactions } = useReactions(image.id);
+    const { comments, addComment, deleteComment } = useComments(image.id);
     const [newComment, setNewComment] = useState('');
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
     const counts = getCounts();
+    const userReactions = getUserReactions();
 
     const handleAddComment = (e: React.FormEvent) => {
         e.preventDefault();
@@ -23,12 +28,14 @@ const ImageModal: React.FC<ImageModalProps> = ({ image, onClose }) => {
         }
     };
 
-    const reactions = [
-        { emoji: '🔥', label: 'LIT', icon: Flame, color: 'text-orange-500' },
-        { emoji: '💖', label: 'Love', icon: Heart, color: 'text-pink-500' },
-        { emoji: '✨', label: 'Magic', icon: Sparkles, color: 'text-amber-400' },
-        { emoji: '🦄', label: 'Epic', icon: Wand2, color: 'text-purple-400' },
+    const reactionOptions = [
+        { emoji: '🔥', label: 'LIT', icon: Flame, color: 'text-orange-500', bg: 'bg-orange-500/10' },
+        { emoji: '💖', label: 'Love', icon: Heart, color: 'text-pink-500', bg: 'bg-pink-500/10' },
+        { emoji: '✨', label: 'Magic', icon: Sparkles, color: 'text-amber-400', bg: 'bg-amber-400/10' },
+        { emoji: '🦄', label: 'Epic', icon: Wand2, color: 'text-purple-400', bg: 'bg-purple-400/10' },
     ];
+
+    const extraEmojis = ['🚀', '💯', '👏', '🎨', '📸', '🌈', '⚡', '🤖'];
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10">
@@ -52,9 +59,9 @@ const ImageModal: React.FC<ImageModalProps> = ({ image, onClose }) => {
                 {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute top-6 right-6 z-50 p-3 rounded-full bg-black/50 text-white/70 hover:text-white hover:bg-black/70 transition-all border border-white/10"
+                    className="absolute top-6 right-6 z-50 p-2 rounded-full bg-black/50 text-white/50 hover:text-white hover:bg-black/70 transition-all border border-white/10"
                 >
-                    <X className="w-6 h-6" />
+                    <X className="w-5 h-5" />
                 </button>
 
                 {/* Image Section */}
@@ -79,37 +86,53 @@ const ImageModal: React.FC<ImageModalProps> = ({ image, onClose }) => {
                                 <p className="text-zinc-500 text-sm">@{image.user.username}</p>
                             </div>
                         </div>
-                        {image.description && (
-                            <p className="text-zinc-300 text-sm leading-relaxed italic">
-                                "{image.description}"
-                            </p>
-                        )}
                     </div>
 
                     {/* Reactions Grid */}
-                    <div className="grid grid-cols-4 gap-4 p-8 border-b border-white/5">
-                        {reactions.map((r) => {
-                            const Icon = r.icon;
-                            return (
-                                <button
-                                    key={r.emoji}
-                                    onClick={() => addReaction(r.emoji)}
-                                    className="group flex flex-col items-center gap-2 p-3 rounded-2xl bg-white/[0.03] hover:bg-white/[0.08] border border-white/5 transition-all"
-                                >
-                                    <div className={`p-2 rounded-xl bg-white/[0.03] group-hover:scale-110 transition-transform ${r.color}`}>
-                                        <Icon className="w-5 h-5" />
-                                    </div>
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">{r.label}</span>
-                                        <span className="text-sm font-black text-white">{counts[r.emoji] || 0}</span>
-                                    </div>
-                                </button>
-                            );
-                        })}
+                    <div className="p-6 border-b border-white/5">
+                        <div className="grid grid-cols-4 gap-3 mb-4">
+                            {reactionOptions.map((r) => {
+                                const Icon = r.icon;
+                                const isActive = userReactions.includes(r.emoji);
+                                return (
+                                    <button
+                                        key={r.emoji}
+                                        onClick={() => addReaction(r.emoji)}
+                                        className={`group flex flex-col items-center gap-2 p-3 rounded-2xl transition-all border ${isActive
+                                                ? 'bg-white/10 border-white/20 scale-105'
+                                                : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.08]'
+                                            }`}
+                                    >
+                                        <div className={`p-2 rounded-xl group-hover:scale-110 transition-transform ${r.bg} ${r.color}`}>
+                                            <Icon className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex flex-col items-center">
+                                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none mb-1">{r.label}</span>
+                                            <span className="text-sm font-black text-white">{counts[r.emoji] || 0}</span>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Quick Emoji Picker */}
+                        <div className="flex items-center justify-between px-2">
+                            <div className="flex gap-2">
+                                {extraEmojis.map(emoji => (
+                                    <button
+                                        key={emoji}
+                                        onClick={() => addReaction(emoji)}
+                                        className={`text-lg hover:scale-125 transition-transform ${userReactions.includes(emoji) ? 'drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]' : 'grayscale-[0.5] hover:grayscale-0'}`}
+                                    >
+                                        {emoji}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     {/* Comments List */}
-                    <div className="flex-1 overflow-y-auto p-8 space-y-6">
+                    <div className="flex-1 overflow-y-auto p-8 space-y-6 scrollbar-hide">
                         <div className="flex items-center gap-2 mb-2 text-zinc-500">
                             <MessageCircle className="w-4 h-4" />
                             <span className="text-xs font-bold uppercase tracking-widest">Discussion</span>
@@ -130,11 +153,21 @@ const ImageModal: React.FC<ImageModalProps> = ({ image, onClose }) => {
                                         {comment.username.charAt(0)}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-1">
-                                            <span className="font-bold text-sm text-white" style={{ color: comment.userColor as string }}>{comment.username}</span>
-                                            <span className="text-[10px] text-zinc-600 uppercase font-bold tracking-tighter">
-                                                {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
+                                        <div className="flex items-center justify-between gap-2 mb-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-bold text-sm text-white" style={{ color: comment.userColor as string }}>{comment.username}</span>
+                                                <span className="text-[10px] text-zinc-600 uppercase font-bold tracking-tighter">
+                                                    {new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                            {comment.userId === userId && (
+                                                <button
+                                                    onClick={() => deleteComment(comment.id)}
+                                                    className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-500/20 hover:text-red-500 rounded-lg transition-all text-zinc-600"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
                                         </div>
                                         <p className="text-zinc-300 text-sm leading-relaxed break-words">
                                             {comment.text}

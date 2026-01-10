@@ -3,9 +3,26 @@ import GalleryGrid from '../components/gallery/GalleryGrid';
 import Feed from '../components/feed/Feed';
 import { useUserStore } from '../store/useUserStore';
 import { Camera, Zap, Activity } from 'lucide-react';
+import ImageModal from '../components/gallery/ImageModal';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { fetchImages } from '../api/unsplash';
+import { AnimatePresence } from 'framer-motion';
 
 const Home: React.FC = () => {
-    const { username, userColor } = useUserStore();
+    const { username, userColor, selectedImageId, setSelectedImageId } = useUserStore();
+
+    // We need to find the image object if it's selected to pass to the modal
+    const { data } = useInfiniteQuery({
+        queryKey: ['images'],
+        queryFn: fetchImages,
+        getNextPageParam: (_lastPage, allPages) => allPages.length + 1,
+        initialPageParam: 1,
+        enabled: !!selectedImageId, // Only if modal is open
+    });
+
+    const selectedImage = data?.pages
+        .flatMap((page) => page)
+        .find((img) => img.id === selectedImageId);
 
     return (
         <div className="min-h-screen bg-background text-foreground bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-900 via-background to-background">
@@ -57,6 +74,17 @@ const Home: React.FC = () => {
                     </div>
                 </aside>
             </main>
+
+            {/* Modal */}
+            <AnimatePresence>
+                {selectedImageId && selectedImage && (
+                    <ImageModal
+                        key={selectedImage.id}
+                        image={selectedImage}
+                        onClose={() => setSelectedImageId(null)}
+                    />
+                )}
+            </AnimatePresence>
 
             {/* Footer / Mobile Profile */}
             <footer className="md:hidden fixed bottom-6 right-6">

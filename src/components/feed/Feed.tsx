@@ -1,9 +1,11 @@
 import React from 'react';
 import { db } from '../../api/instantdb';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Flame } from 'lucide-react';
+import { MessageCircle, Flame, ExternalLink } from 'lucide-react';
+import { useUserStore } from '../../store/useUserStore';
 
 const Feed: React.FC = () => {
+    const { setSelectedImageId } = useUserStore();
     const { isLoading, data } = db.useQuery({
         feedEvents: {
             $: {
@@ -12,7 +14,6 @@ const Feed: React.FC = () => {
         },
     });
 
-    // Sort manually if server sorting is tricky with current schema
     const events = ((data as any)?.feedEvents || []).sort((a: any, b: any) => b.createdAt - a.createdAt);
 
     if (isLoading) {
@@ -42,7 +43,9 @@ const Feed: React.FC = () => {
                         initial={{ opacity: 0, x: 20, scale: 0.95 }}
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="group relative p-4 glass-dark rounded-2xl border border-white/5 hover:border-white/10 transition-all flex items-start gap-3"
+                        whileHover={{ x: -2 }}
+                        onClick={() => setSelectedImageId(event.imageId)}
+                        className="group relative p-4 glass-dark rounded-2xl border border-white/5 hover:border-blue-500/30 hover:bg-white/[0.04] transition-all flex items-start gap-3 cursor-pointer"
                     >
                         <div className="shrink-0 mt-1">
                             {event.type === 'reaction' ? (
@@ -60,7 +63,9 @@ const Feed: React.FC = () => {
                             <p className="text-sm text-zinc-300">
                                 <span className="font-bold text-white">{event.username}</span>
                                 {event.type === 'reaction' ? ' reacted with ' : ' commented on '}
-                                <span className="font-bold text-white">an image</span>
+                                <span className="font-bold text-white group-hover:text-blue-400 transition-colors inline-flex items-center gap-1">
+                                    an image <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </span>
                             </p>
 
                             {event.type === 'comment' && (

@@ -16,6 +16,16 @@ export const useReactions = (imageId: string) => {
     const reactions = (data as any)?.reactions || [];
 
     const addReaction = async (emoji: string) => {
+        // Check if user already reacted with this emoji
+        const existing = reactions.find((r: any) => r.emoji === emoji && r.userId === userId);
+
+        if (existing) {
+            await db.transact([
+                tx.reactions[existing.id].delete()
+            ]);
+            return;
+        }
+
         const reactionId = id();
         const eventId = id();
 
@@ -45,7 +55,11 @@ export const useReactions = (imageId: string) => {
         return counts;
     };
 
-    return { reactions, addReaction, getCounts, isLoading, error };
+    const getUserReactions = () => {
+        return reactions.filter((r: any) => r.userId === userId).map((r: any) => r.emoji);
+    };
+
+    return { reactions, addReaction, getCounts, getUserReactions, isLoading, error };
 };
 
 export const useComments = (imageId: string) => {
@@ -85,5 +99,11 @@ export const useComments = (imageId: string) => {
         ]);
     };
 
-    return { comments, addComment, isLoading, error };
+    const deleteComment = async (commentId: string) => {
+        await db.transact([
+            tx.comments[commentId].delete()
+        ]);
+    };
+
+    return { comments, addComment, deleteComment, isLoading, error };
 };
